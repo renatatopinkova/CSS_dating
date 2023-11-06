@@ -38,14 +38,21 @@ ui <- fluidPage(
 )
 
 # Define server
-server <- function(input, output, session) {
+server <- function(input, output) {
+  
+  
   
   profiles <- read.csv("profiles.csv")
   
   # get id of current sampled profile
   # has to be reactive to be updated after clicking
   currentProfile <- reactiveVal(
-    sample(profiles$profile_id, 1))
+    sample(profiles$profile_id, 1)
+    )
+  
+  currentEduc <- reactiveVal(
+    sample(c("Lower", "Medium", "High"), 1)
+  )
   
   # TODO: current id should be stored in a vector and appended each iteration, so
   # they are not repeated
@@ -62,16 +69,21 @@ server <- function(input, output, session) {
   })
   
   # TODO: education should be reactive too 
+
   output$profileEduc <- renderText({
-    paste("Education:", sample(c("Lower", "Medium", "High"), 1))
+    paste("Education:", currentEduc())
   })
   
   # Function that updates profile after clicking
   # TODO: Profiles should not repeat, there should be a vector storing each,
   # then restricting the sample + when end, the app should stop
   updateProfile <- function() {
+    # clunky but works
+    # TODO: Make 
     newProfile <- sample(profiles$profile_id, 1)
     currentProfile(newProfile)
+    newEduc <- sample(c("Lower", "Medium", "High"), 1)
+    currentEduc(newEduc)
   }
   
   saveData <- function(success) {
@@ -81,7 +93,7 @@ server <- function(input, output, session) {
       id = profiles$profile_id[i],
       url = profiles$photo[i],
       age = profiles$age[i],
-      # education = output$profileEduc,
+      education = currentEduc(),
       success = success,
       time = Sys.time()
     )
