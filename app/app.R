@@ -1,6 +1,6 @@
 library(shiny)
 library(shinyjs)
-library(shinyalert)
+
 
 # Define UI
 ui <- fluidPage(
@@ -53,6 +53,8 @@ ui <- fluidPage(
         id = "profileInfo", style = "font-size: 18px",
         textOutput("profileEduc")
       ),
+      
+      tags$p(id = "attr"),
 
       # Buttons for success and fail
       tags$div(
@@ -70,10 +72,12 @@ server <- function(input, output) {
   
   # cards hidden on start
   # not ideal, you can see the card "blick" in the background
+  # module? 
   hideElement("cards")
 
   # hide questionnaire, show cards after submitting input
   # TODO: should check that all fields filled in before allowing this
+  # maybe change inputs to shinyforms
   observeEvent(input$submit, {
     
     # assign condition for user - could be outside? 
@@ -113,8 +117,6 @@ server <- function(input, output) {
   output$profileAge <- renderText({
     paste("Age:", profiles$age[currentProfile()])
   })
-  
-  # TODO: education should be reactive too 
 
   output$profileEduc <- renderText({
     paste("Education:", currentEduc())
