@@ -7,32 +7,60 @@ ui <- fluidPage(
   useShinyjs(),
   titlePanel("Tinder-like Dating App"),
   
-  # Main Tinder-like card display area
   mainPanel(
-    width = 4,
-    offset = 3,
-    style = "text-align: center; 
+    
+    # Questionnaire part
+    tags$div(id = "quest", 
+             
+             radioButtons(inputId = "gender", 
+                          label = "I am a...", 
+                          choices = c("Man", "Woman")),
+             
+             radioButtons(inputId = "int_in", 
+                          label = "I am romantically interested in...",
+                          choices = c("Men", "Women")),
+             
+             textInput(inputId = "prolific_id", 
+                       label = "Please submit your Prolific ID"),
+             
+             ## TODO: other fields
+             
+             actionButton("submit", "Submit!")
+             
+             ),
+    
+    # App part
+    tags$div(
+      id = "cards",
+      width = 4,
+      offset = 3,
+      style = "text-align: center; 
               border-style:solid; 
               border-color: lightgray; 
               border-radius: 30px; 
               padding: 5%;
               margin: 5% 30% 5% 30%",
-    
-    # Display profile image
-    imageOutput("profileImage"),
-    
-    # Display age and education
-    tags$div(id = "profileInfo", style = "font-size: 18px",
-             textOutput("profileAge")),
-    tags$div(id = "profileInfo", style = "font-size: 18px",
-             textOutput("profileEduc")),
-    
-    # Buttons for success and fail
-    tags$div(
-      id = "buttonGroup",
-      style = "display: flex; justify-content: space-around; margin-top: 20px;",
-      actionButton("successButton", "Success", class = "btn-success"),
-      actionButton("failButton", "Fail", class = "btn-danger")
+
+      # Display profile image
+      imageOutput("profileImage"),
+
+      # Display age and education
+      tags$div(
+        id = "profileInfo", style = "font-size: 18px",
+        textOutput("profileAge")
+      ),
+      tags$div(
+        id = "profileInfo", style = "font-size: 18px",
+        textOutput("profileEduc")
+      ),
+
+      # Buttons for success and fail
+      tags$div(
+        id = "buttonGroup",
+        style = "display: flex; justify-content: space-around; margin-top: 20px;",
+        actionButton("successButton", "Success", class = "btn-success"),
+        actionButton("failButton", "Fail", class = "btn-danger")
+      )
     )
   )
 )
@@ -40,7 +68,25 @@ ui <- fluidPage(
 # Define server
 server <- function(input, output) {
   
-  
+  # cards hidden on start
+  # not ideal, you can see the card "blick" in the background
+  hideElement("cards")
+
+  # hide questionnaire, show cards after submitting input
+  # TODO: should check that all fields filled in before allowing this
+  observeEvent(input$submit, {
+    
+    # assign condition for user - could be outside? 
+    condition <- sample(0:2, 1)
+    
+    ## TODO: Save the user-level info in DB
+    
+    # hide questionnaire
+    hideElement("quest")
+    
+    # show app
+    showElement("cards")
+  })
   
   profiles <- read.csv("profiles.csv")
   
@@ -90,6 +136,7 @@ server <- function(input, output) {
     i <- currentProfile()
     # Record the choice in a CSV file
     choice <- data.frame(
+      prolific_id = input$prolific_id, 
       id = profiles$profile_id[i],
       url = profiles$photo[i],
       age = profiles$age[i],
