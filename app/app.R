@@ -23,7 +23,7 @@ ui <- fluidPage(
              
              radioButtons(inputId = "int_in", 
                           label = "I am romantically interested in...",
-                          choices = c("Men" = "M", "Women" = "F"),
+                          choices = c("Women" = "F1", "Men" = "M1"),
                           selected = character(0)),
              
              textInput(inputId = "prolific_id", 
@@ -51,15 +51,15 @@ server <- function(input, output) {
   # hide questionnaire, show cards after submitting input
   # TODO: should check that all fields filled in before allowing this
   # maybe change inputs to shinyforms
-  
- # profiles <- read.csv("profiles.csv") 
+
   
   observeEvent(input$submit, {
     ## TODO: Save the user-level info in DB
     
     #print(profiles)
-    profiles <- read.csv("profiles.csv")|> filter(gender %in% input$int_in)
+    profiles <- read.csv("profiles.csv")|> filter(gender %in% input$int_in) |> sample_n(2, replace = FALSE)
     print(profiles)
+    print(profiles[2, ])
 
     # hide questionnaire
     removeUI(selector = "#quest")
@@ -67,7 +67,7 @@ server <- function(input, output) {
     # get id of current sampled profile
     # has to be reactive to be updated after clicking
     currentProfile <- reactiveVal(
-      sample(profiles$profile_id, 1)
+      profiles[1, ]
     )
     
     
@@ -77,7 +77,7 @@ server <- function(input, output) {
     
     # TODO: Add condition for visual
     output$condition_display <- reactive(
-      ifelse(condition == 0, "", paste("This profile is considered", profiles$attractive[currentProfile()], "attractive"))
+      ifelse(condition == 0, "", paste("This profile is considered", currentProfile()$attractive, "attractive"))
     )
     
     # TODO: current id should be stored in a vector and appended each iteration, so
@@ -85,13 +85,13 @@ server <- function(input, output) {
     
     # Get photo of sampled profile
     output$profileImage <- renderImage({
-      list(src = paste0("imgs/", profiles$photo[currentProfile()]),
+      list(src = paste0("imgs/", currentProfile()$photo),
            width = "90%")
     }, deleteFile = F)
     
     # Get age of sampled profile (has to match age)
     output$profileAge <- renderText({
-      paste("Age:", profiles$age[currentProfile()])
+      paste("Age:", currentProfile()$age)
     })
     
     output$profileEduc <- renderText({
@@ -100,32 +100,49 @@ server <- function(input, output) {
     
     
     output$profileGender <- renderText({
-      paste("Gender:", profiles$gender[currentProfile()])
+      paste("Gender:", currentProfile()$gender)
     })
     
     # Function that updates profile after clicking
-    # TODO: Profiles should not repeat, there should be a vector storing each,
-    # then restricting the sample + when end, the app should stop
+    # Set up counter
+    counter <- reactiveVal(1)
+    
     updateProfile <- function() {
-      # clunky but works
-      # TODO: Make 
-      newProfile <- sample(profiles$profile_id, 1)
-      currentProfile(newProfile)
-      newEduc <- sample(c("Lower", "Medium", "High"), 1)
-      currentEduc(newEduc)
-      print(currentProfile)
+      
+      # Update counter
+      newCounter <- counter() + 1
+      counter(newCounter)
+      
+      # check how far (how many profiles were viewed) in the app
+      if (counter() <= 2) {
+        
+        newProfile <- profiles[counter(), ]
+        currentProfile(newProfile)
+        
+        newEduc <- sample(c("Lower", "Medium", "High"), 1)
+        currentEduc(newEduc)
+        
+        
+        print(counter)
+        print(currentProfile)
+        
+      } else {
+        
+        ## TODO: replace with alert to end app 
+        message("End")
+      }
+      
     }
     
     
-    
+
     saveData <- function(success) {
-      i <- currentProfile()
       # Record the choice in a CSV file
       choice <- data.frame(
-        prolific_id = input$prolific_id, 
-        id = profiles$profile_id[i],
-        url = profiles$photo[i],
-        age = profiles$age[i],
+        prolific_id = input$prolific_id,
+        id = currentProfile()$profile_id,
+        url = currentProfile()$photo,
+        age = currentProfile()$age,
         education = currentEduc(),
         success = success,
         time = Sys.time()
