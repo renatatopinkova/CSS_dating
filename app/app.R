@@ -78,7 +78,7 @@ server <- function(input, output) {
       paste(data, collapse = "', '")
     )
     # Submit the update query and disconnect
-    dbGetQuery(db, query)
+    dbSendStatement(db, query)
     dbDisconnect(db)
   }
   
@@ -277,7 +277,7 @@ server <- function(input, output) {
       )
       print(query)
       # Submit the update query and disconnect
-      dbGetQuery(db, query)
+      dbSendStatement(db, query)
       dbDisconnect(db)
     }
 
