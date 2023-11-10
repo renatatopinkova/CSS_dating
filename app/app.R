@@ -234,18 +234,17 @@ server <- function(input, output) {
         # update education level (randomized)
         newEduc <- sample(c("Lower", "Medium", "High"), 1)
         currentEduc(newEduc)
-
-        # TODO: delete, just visual check
-        print(counter)
-        print(currentProfile)
         
         # break after reaching last sampled profile
       } else {
         
-        shinyalert("Thank you!", type = "success")
+        shinyalert("Thank you!", "You have finished all tasks. 
+                   Please note the completion code ##### and then close this website.", 
+                   type = "success",
+                   closeOnEsc = FALSE,
+                   closeOnClickOutside = FALSE,
+                   showConfirmButton = FALSE)
         
-        ## TODO: replace with alert to end app
-        message("End")
       }
     }
 
