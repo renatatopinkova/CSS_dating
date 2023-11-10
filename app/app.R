@@ -61,11 +61,18 @@ ui <- fluidPage(
 # Define server
 server <- function(input, output) {
   
+  # Assign condition randomly
+  # TODO: Add condition for visual
+  condition <- sample(0:1, 1)
+  
+  
+  # Database settings 
   table <- "users"
   table_choices <- "choices"
   sqlitePath <-  "db/responses.db"
   
   
+  # Define function to Save user data
   
     saveDataUsers <- function(data) {
     # Connect to the database
@@ -82,44 +89,20 @@ server <- function(input, output) {
     dbDisconnect(db)
   }
   
-    
+
+    # Prepare user data for db
     formDataUsers <- reactive({
       data <- sapply(c(fieldsMandatory, "age"), function(x)
         input[[x]])
       data <- c(data, date = as.POSIXct(Sys.time()),
                 condition = condition)
-      data <- t(data)
-      data |> as.data.frame()
     })
     
-    
- 
-    
-    
-    # saveData <- function(success) {
-    #   # Record the choice in a CSV file
-    #   choice <- data.frame(
-    #     prolific_id = input$prolific_id,
-    #     id = currentProfile()$profile_id,
-    #     url = currentProfile()$photo,
-    #     age = currentProfile()$age,
-    #     education = currentEduc(),
-    #     success = success,
-    #     time = Sys.time()
-    #   )
-    #   write.csv(choice, "choices.csv", append = TRUE, row.names = FALSE)
-    # }
-    
 
-    
-  # Assign condition randomly
-  # TODO: Add condition for visual
-  condition <- sample(0:1, 1)
+  # Questionnaire  
+  # Field validations
   
-  
-  # Field validation
-  
-  # Checking valid age
+  # Set up validation rule
   iv <- InputValidator$new()
   iv$add_rule("age", sv_between(18, 99))
   
@@ -128,7 +111,7 @@ server <- function(input, output) {
                iv$enable()})
   
 
-  # All input fields
+  # Remaining input fields
   fieldsMandatory <- c("gender", "int_in", "prolific_id")
   
   observe({
@@ -149,18 +132,15 @@ server <- function(input, output) {
     
     
   })
+
   
-  # formData <- reactive({
-  #   data <- sapply(fieldsMandatory, function(x) input[[x]])
-  #   data
-  # })
-  
-  
+  # Observe Submit button trigger 
   observeEvent(input$submit, {
-    ## TODO: Save the user-level info in DB
+    
+    # Save user data to db
     saveDataUsers(formDataUsers())
     
-    # load in data
+    # Load in profile data
     profiles <- read.csv("profiles_cfd.csv") |>
       # filter based on user input
       filter(gender %in% input$int_in) |>
@@ -172,6 +152,9 @@ server <- function(input, output) {
 
     # hide questionnaire
     removeUI(selector = "#quest")
+    
+    
+    # Generate profile information
 
     # get id of current sampled profile
     # has to be reactive to be updated after clicking
@@ -179,18 +162,12 @@ server <- function(input, output) {
       profiles[1, ]
     )
 
-
-    currentEduc <- reactiveVal(
-      sample(c("Lower", "Medium", "High"), 1)
-    )
-
+    # Display exp. condition
     # TODO: Add condition for visual
     output$condition_display <- reactive(
       ifelse(condition == 0, "", paste("This profile is considered", currentProfile()$attr_level, "attractive"))
     )
 
-    # TODO: current id should be stored in a vector and appended each iteration, so
-    # they are not repeated
 
     # Get photo of sampled profile
     output$profileImage <- renderImage(
@@ -208,7 +185,13 @@ server <- function(input, output) {
       paste("Age:", currentProfile()$age)
     })
 
-    # Generate education level (independent on dataframe)
+    
+    # Randomize education level
+    currentEduc <- reactiveVal(
+      sample(c("Lower", "Medium", "High"), 1) # initial value
+    )
+    
+    # Render education
     output$profileEduc <- renderText({
       paste("Education:", currentEduc())
     })
@@ -297,6 +280,8 @@ server <- function(input, output) {
       updateProfile()
     })
     
+    
+    
     ### UI part of the cards-part
 
     # show app
@@ -323,16 +308,17 @@ server <- function(input, output) {
           id = "profileInfo", style = "font-size: 18px",
           textOutput("profileEduc")
         ),
-        tags$div(
-          id = "profileInfo", style = "font-size: 18px",
-          textOutput("profileGender")
-        ),
+        # tags$div(
+        #   id = "profileInfo", style = "font-size: 18px",
+        #   textOutput("profileGender")
+        # ),
         tags$p(
           id = "attr",
           textOutput("condition_display")
         ),
 
         # Buttons for success and fail
+        # TODO: style 
         tags$div(
           id = "buttonGroup",
           style = "display: flex; justify-content: space-around; margin-top: 20px;",
