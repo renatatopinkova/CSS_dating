@@ -95,33 +95,6 @@ server <- function(input, output) {
     
  
     
-    formDataChoices <- reactive({
-      data <- tibble(prolific_id = input$prolific_id, 
-                     id = currentProfile()$profile_id,
-                     url = currentProfile()$photo,
-                     age = currentProfile()$age,
-                     education = currentEduc(),
-                     time = as.POSIXct(Sys.time()))
-      # data <- t(data)
-      # data |> as.data.frame()
-    })
-    
-    saveDataChoices <- function(data, success) {
-      # Connect to the database
-      db <- dbConnect(SQLite(), sqlitePath)
-      # Construct the update query by looping over the data fields
-      query <- sprintf(
-        "INSERT INTO %s (%s) VALUES ('%s')",
-        table_choices, 
-        paste(c(names(data), "success"), collapse = ", "),
-        paste(c(data, success), collapse = "', '")
-      )
-      print(query)
-      # Submit the update query and disconnect
-      dbGetQuery(db, query)
-      dbDisconnect(db)
-    }
-    
     
     # saveData <- function(success) {
     #   # Record the choice in a CSV file
@@ -276,21 +249,51 @@ server <- function(input, output) {
       }
     }
 
+    
+    
+    # Forming choice data
 
+    formDataChoices <- reactive({
+      data <- tibble(prolific_id = input$prolific_id, 
+                     id = currentProfile()$profile_id,
+                     url = currentProfile()$photo,
+                     age = currentProfile()$age,
+                     education = currentEduc(),
+                     time = as.POSIXct(Sys.time()))
+    })
+    
+    # Save choice data into db
+    
+    saveDataChoices <- function(data, success) {
+      
+      # Connect to the database
+      db <- dbConnect(SQLite(), sqlitePath)
+      # Construct the update query
+      query <- sprintf(
+        "INSERT INTO %s (%s) VALUES ('%s')",
+        table_choices, 
+        paste(c(names(data), "success"), collapse = ", "),
+        paste(c(data, success), collapse = "', '")
+      )
+      print(query)
+      # Submit the update query and disconnect
+      dbGetQuery(db, query)
+      dbDisconnect(db)
+    }
 
    
 
 
     # Action when the "Success" button is clicked
     observeEvent(input$successButton, {
-      saveDataChoices(formDataChoices(), success = 1)
+      saveDataChoices(formDataChoices(), success = TRUE)
       # update profile after saving data
       updateProfile()
     })
 
     # Action when the "Fail" button is clicked
     observeEvent(input$failButton, {
-      saveDataChoices(formDataChoices(), success = 0)
+      saveDataChoices(formDataChoices(), success = FALSE)
       # update profile after saving data
       updateProfile()
     })
