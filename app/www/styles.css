@@ -1,5 +1,50 @@
-#cards {
-  background-image: url('https://github.com/renatatopinkova/CSS_dating/blob/main/app/www/phone_035.jpg');
-  background-repeat: no-repeat;
-  background-size: cover;
+
+
+img {
+  padding: 5% !important;
+}
+
+.button-heart{
+   background-image: url('heart.png') !important;
+ border-radius: 50% !important;
+  border-style: dashed !important;
+  border-color: green !important;
+  background-color: #eaf7f5;
+  background-position: center !important;
+      background-repeat: no-repeat !important;
+      background-size: cover !important;
+      width: 75px;
+      height: 75px;
+}
+
+
+.button-heart:hover{
+  background-color: #80cdc2;
+}
+
+.button-heart:active {
+  border-style: solid !important;
+  border-color: green !important;
+  background-color: green !important;
+}
+
+.button-cross{
+   background-image: url('cross.png') !important;
+ border-radius: 50% !important;
+  border-style: dashed !important;
+  border-color: red !important;
+  background-color: #fad8d6 !important;
+  background-position: center !important;
+      background-repeat: no-repeat !important;
+      background-size: cover !important;
+      width: 75px;
+      height: 75px;
+}
+
+.button-cross:hover{
+  background-color: #f4b1ae !important;
+}
+
+.button-cross:active {
+  background-color: #ef8a85 !important;
 }

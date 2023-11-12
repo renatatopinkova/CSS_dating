@@ -16,7 +16,7 @@ ui <- fluidPage(
   titlePanel("Tinder-like Dating App"),
   mainPanel(
     
-    # adding custom stylesheet
+#    adding custom stylesheet
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
     ),
@@ -54,12 +54,16 @@ ui <- fluidPage(
 
       disabled(actionButton("submit", "Submit!"))
     ),
-    tags$div(id = "cards")
+  
+    
+    tags$div(id = "cards", style = "margin-left: 30%; max-width: 300px")
   )
 )
 
 # Define server
 server <- function(input, output) {
+  
+
   
   # Assign condition randomly
   # TODO: Add condition for visual
@@ -133,6 +137,14 @@ server <- function(input, output) {
     
   })
 
+  output$heart <- renderImage(
+    {
+      list(
+        src = paste0("www/", "heart.png")
+      )
+    },
+    deleteFile = F
+  )
   
   # Observe Submit button trigger 
   observeEvent(input$submit, {
@@ -287,17 +299,20 @@ server <- function(input, output) {
     # show app
     insertUI(selector = "#cards", ui = tagList( # App part
       tags$div(
-        width = 4,
+        id = "main_card",
+      #  width = "50%",
         offset = 3,
         style = "text-align: center; 
-              border-style:solid; 
-              border-color: lightgray; 
-              border-radius: 30px; 
-              padding: 5%;
-              margin: 5% 30% 5% 30%",
+              border; border-style:solid; 
+              border-color: black; 
+              border-radius: 35px;
+              border-width: 5px;
+              padding: 5%)",
+        
 
         # Display profile image
-        imageOutput("profileImage"),
+        tags$div(style = "padding: 5%",
+          imageOutput("profileImage")),
 
         # Display age and education
         tags$div(
@@ -321,10 +336,12 @@ server <- function(input, output) {
         # TODO: style 
         tags$div(
           id = "buttonGroup",
-          style = "display: flex; justify-content: space-around; margin-top: 20px;",
-          actionButton("successButton", "Success", class = "btn-success"),
-          actionButton("failButton", "Fail", class = "btn-danger")
+          style = "display: flex; justify-content: space-around; margin-top: 20px; padding-bottom:5%",
+          actionButton("successButton", "", class = "button-heart"),
+          actionButton("failButton", "", class = "button-cross")
         )
+      
+      
       )
     ))
   })
