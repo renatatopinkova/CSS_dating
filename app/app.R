@@ -10,7 +10,7 @@ library(RSQLite)
 # Define UI
 ui <- fluidPage(
   useShinyjs(),
-  titlePanel("Tinder-like Dating App"),
+  titlePanel("  "),
   mainPanel(
     
 #    adding custom stylesheet
@@ -21,6 +21,14 @@ ui <- fluidPage(
     # Questionnaire part
     tags$div(
       id = "quest",
+      
+      p("Please fill in the following questionnaire and enter your Prolific ID."), 
+        
+      p("After submitting your information, you will view a series of online dating profiles. 
+        For each profile, we ask you to evaluate whether you would be interested in pursuing the individual featured (by pressing 💚) or not (by pressing ❌ ). After you have rated 30 profiles, your completion code will be displayed."), 
+        
+      p(strong("! Please do not refresh this website beforehand, otherwise the rating counter will be reset to 0.")),
+      
       radioButtons(
         inputId = "gender",
         label = "I am a...",
@@ -95,6 +103,7 @@ ui <- fluidPage(
   
     
     tags$div(id = "cards", style = "margin-left: 30%; max-width: 300px")
+  #  tags$div(id = "instr_btn", style = "margin-left: 30%")
   )
 )
 
@@ -198,7 +207,7 @@ server <- function(input, output, session) {
                            # validate as true
                            TRUE)
     
-    
+
     # print(paste("Conditionals filled", conditionals))
     
     mandatoryFilled <- all(c(mandatoryFilled, ageFilled, conditionalsFilled))
@@ -229,7 +238,7 @@ server <- function(input, output, session) {
       # filter based on user input
       filter(gender %in% input$int_in) |>
       # sample out N 
-      sample_n(20, replace = FALSE)
+      sample_n(30, replace = FALSE)
     
     print(profiles)
     print(profiles[2, ])
@@ -246,13 +255,19 @@ server <- function(input, output, session) {
       profiles[1, ]
     )
 
+
+    
+    
     # Display exp. condition
     # TODO: Add condition for visual
     output$condition_display <- reactive(
-      ifelse(condition == 0, "", paste("This profile is considered", currentProfile()$attr_level, "attractive"))
+      ifelse(condition == 0, "", paste("This profile has a", currentProfile()$attr_level, "popularity rating, indicating that", 
+                                       ifelse(currentProfile()$attr_level == "high", "many",
+                                              ifelse(currentProfile()$attr_level == "medium", "some", "not many")),
+                                       "other users pursued the profile."))
     )
-
-
+    
+    
     # Get photo of sampled profile
     output$profileImage <- renderImage(
       {
@@ -292,7 +307,7 @@ server <- function(input, output, session) {
       counter(newCounter)
 
       # check how far (how many profiles were viewed) in the app
-      if (counter() <= 20) {
+      if (counter() <= 30) {
         
         # select next row of sampled profiles
         newProfile <- profiles[counter(), ]
@@ -365,21 +380,30 @@ server <- function(input, output, session) {
     })
     
     
+    observeEvent(input$instructions, {
+      shinyalert("Your choices",
+                 "💚 Green Heart - If you're interested in pursuing the individual.
+                  ❌ Red Cross - If you're not interested in pursuing the individual.", 
+                 type = "info")
+      }
+    )
+    
     
     ### UI part of the cards-part
 
     # show app
     insertUI(selector = "#cards", ui = tagList( # App part
+      
+     
+
       tags$div(
         id = "main_card",
-      #  width = "50%",
-        offset = 3,
         style = "text-align: center; 
               border; border-style:solid; 
               border-color: black; 
               border-radius: 35px;
               border-width: 5px;
-              padding: 5%)",
+              padding: 5%",
         
 
         # Display profile image
@@ -395,12 +419,11 @@ server <- function(input, output, session) {
           id = "profileInfo", style = "font-size: 18px",
           textOutput("profileEduc")
         ),
-        # tags$div(
-        #   id = "profileInfo", style = "font-size: 18px",
-        #   textOutput("profileGender")
-        # ),
+
+    
         tags$p(
           id = "attr",
+          style = "font-size: 16px",
           textOutput("condition_display")
         ),
 
@@ -414,7 +437,13 @@ server <- function(input, output, session) {
         )
       
       
+      ),
+      tags$div(
+        style = "display: flex; justify-content: center; padding: 5%",
+        actionButton("instructions", "Instructions", class="btn-info",)
       )
+      
+      
     ))
   })
 }
