@@ -5,9 +5,6 @@ library(shinyvalidate)
 library(dplyr)
 library(DBI)
 library(RSQLite)
-# library(reactlog)
-# 
-# reactlog_enable()
 
 
 # Define UI
@@ -45,6 +42,47 @@ ui <- fluidPage(
         max = 99,
       ),
       
+      # select inputs created empty to avoid defaulting to first value when not selected
+      selectInput(
+        "ethnicity",
+        "Which race or ethnicity best describes you?",
+        choices = "",
+        selected = NULL,
+        multiple = FALSE,
+      ),
+      
+      selectInput("education",
+                  "What is the highest level of education you have completed?",
+                  choices = "",
+                  multiple = FALSE),
+      
+      radioButtons("relationship",
+                   "Are you currently in a committed romantic relationship?",
+                   choices = c("Yes, I am in a committed romantic relationship" = "yes",
+                               "No, I am not in a committed romantic relationship" = "no"),
+                   selected = character(0)),
+      
+      selectInput("dating_ever",
+                  "Have you ever used an online dating site or dating app?",
+                  choices = "",
+                  selected = NULL,
+                  selectize=TRUE),
+      
+      # Filter for online dating experience == YES
+      conditionalPanel(condition = "input.dating_ever.startsWith('yes')",
+                       
+                       radioButtons("dating_exp", 
+                                    "Overall, would you say your OWN personal experiences with online dating sites or dating apps have been…",
+                                    choices = c("Very positive", "Somewhat positive", "Somewhat negative", "Very negative"),
+                                    inline=TRUE, 
+                                    selected = character(0)),
+                       
+                       radioButtons("dating_paid",
+                                    "Have you ever paid to use an online dating site or dating app, including for extra features on that site or app?",
+                                    choices = c("Yes, I have done this", "No, I have not done this"),
+                                    selected = character(0))),
+      
+      
       textInput(
         inputId = "prolific_id",
         label = "Please submit your Prolific ID"
@@ -61,9 +99,25 @@ ui <- fluidPage(
 )
 
 # Define server
-server <- function(input, output) {
+server <- function(input, output, session) {
   
-
+  # update select inputs (fill with choice values)
+  updateSelectInput(session, "dating_ever", 
+                    choices = c("No" = "no", 
+                    "Yes, I am currently using online dating site or dating app" = "yes_current", 
+                    "Yes, I have used online dating site or dating app in the past" = "yes_past"), 
+                    selected = "")
+  
+ 
+  updateSelectInput(session, "ethnicity",
+                    choices =  c("Asian", "Black", "Hispanic", "White", "Multiple ethnicity", "Other"),
+                    selected = "")
+  
+  updateSelectInput(session, "education",
+                    choices = c("Less than high school",
+                                "High school",
+                                "College or University"),
+                    selected = "")
   
   # Assign condition randomly
   # TODO: Add condition for visual
@@ -99,7 +153,10 @@ server <- function(input, output) {
       data <- sapply(c(fieldsMandatory, "age"), function(x)
         input[[x]])
       data <- c(data, date = as.POSIXct(Sys.time()),
-                condition = condition)
+                condition = condition,
+                # conditional values export
+                dating_exp = ifelse(input$dating_ever %in% c("yes_current", "yes_past"), input$dating_exp, NA_character_),
+                dating_paid = ifelse(input$dating_ever %in% c("yes_current", "yes_past"), input$dating_paid, NA_character_))
     })
     
 
@@ -108,7 +165,7 @@ server <- function(input, output) {
   
   # Set up validation rule
   iv <- InputValidator$new()
-  iv$add_rule("age", sv_between(18, 99))
+  iv$add_rule("age", sv_between(18, 99, message_fmt = "Please enter valid age."))
   
   # defer validation of age field so it's displayed only after user inputs some number
   observeEvent(req(is.numeric(input$age)), {
@@ -116,7 +173,8 @@ server <- function(input, output) {
   
 
   # Remaining input fields
-  fieldsMandatory <- c("gender", "int_in", "prolific_id")
+  fieldsMandatory <- c("gender", "int_in", "prolific_id", "ethnicity", "dating_ever", "relationship", "education")
+  fieldsConditionals <- c("dating_exp", "dating_paid")
   
   observe({
     # Function that checks whether all input fields in questionnaire were filled
@@ -129,7 +187,21 @@ server <- function(input, output) {
     # verify valid age
     ageFilled <- input$age >= 18 & input$age < 99
     
-    mandatoryFilled <- all(c(mandatoryFilled, ageFilled))
+    # verify conditionals
+    conditionalsFilled <- ifelse(input$dating_ever %in% c("yes_current", "yes_past"),
+                           # if experience with online dating, validate fields
+                           vapply(fieldsConditionals,
+                                  function(x) {
+                                    !is.null(input[[x]]) && input[[x]] != ""
+                                  },  logical(1)), 
+                           # if no experience with online dating or not selected yet, 
+                           # validate as true
+                           TRUE)
+    
+    
+    # print(paste("Conditionals filled", conditionals))
+    
+    mandatoryFilled <- all(c(mandatoryFilled, ageFilled, conditionalsFilled))
     
     # Toggle (activate) submit button when all fields are filled
     toggleState(id = "submit", condition = mandatoryFilled)
@@ -200,7 +272,7 @@ server <- function(input, output) {
     
     # Randomize education level
     currentEduc <- reactiveVal(
-      sample(c("Lower", "Medium", "High"), 1) # initial value
+      sample(c("Less than high school", "High school", "University"), 1) # initial value
     )
     
     # Render education
@@ -227,7 +299,7 @@ server <- function(input, output) {
         currentProfile(newProfile)
         
         # update education level (randomized)
-        newEduc <- sample(c("Lower", "Medium", "High"), 1)
+        newEduc <- sample(c("Less than high school", "High school", "University"), 1)
         currentEduc(newEduc)
         
         # break after reaching last sampled profile
