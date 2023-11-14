@@ -98,7 +98,7 @@ ui <- fluidPage(
 
       ## TODO: other fields
 
-      disabled(actionButton("submit", "Submit!"))
+      disabled(actionButton("submit", "Submit!", class = "btn-primary", style = "margin-bottom: 5%"))
     ),
   
     
@@ -109,6 +109,8 @@ ui <- fluidPage(
 
 # Define server
 server <- function(input, output, session) {
+  
+  start_time <- as.POSIXct(Sys.time()) 
   
   # update select inputs (fill with choice values)
   updateSelectInput(session, "dating_ever", 
@@ -161,8 +163,10 @@ server <- function(input, output, session) {
     formDataUsers <- reactive({
       data <- sapply(c(fieldsMandatory, "age"), function(x)
         input[[x]])
-      data <- c(data, date = as.POSIXct(Sys.time()),
+      data <- c(data, 
                 condition = condition,
+                start_time = start_time, 
+                submit_time = as.POSIXct(Sys.time()),
                 # conditional values export
                 dating_exp = ifelse(input$dating_ever %in% c("yes_current", "yes_past"), input$dating_exp, NA_character_),
                 dating_paid = ifelse(input$dating_ever %in% c("yes_current", "yes_past"), input$dating_paid, NA_character_))
@@ -273,7 +277,8 @@ server <- function(input, output, session) {
       {
         list(
           src = paste0("imgs_filtered/", currentProfile()$photo),
-          width = "100%"
+          width = "100%",
+          height = "50%"
         )
       },
       deleteFile = F
@@ -431,7 +436,7 @@ server <- function(input, output, session) {
         # TODO: style 
         tags$div(
           id = "buttonGroup",
-          style = "display: flex; justify-content: space-around; margin-top: 10px; padding-bottom:5%",
+          style = "display: flex; justify-content: space-around; margin-top: 20px; padding-bottom:5%",
           actionButton("successButton", "", class = "button-heart"),
           actionButton("failButton", "", class = "button-cross")
         )
