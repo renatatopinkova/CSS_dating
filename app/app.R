@@ -13,20 +13,20 @@ ui <- fluidPage(
   titlePanel("  "),
   mainPanel(
     
-#    adding custom stylesheet
+    #    adding custom stylesheet
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
     ),
-
+    
     # Questionnaire part
     tags$div(
       id = "quest",
       
       p("Please fill in the following questionnaire and enter your Prolific ID."), 
-        
+      
       p("After submitting your information, you will view a series of online dating profiles. 
-        For each profile, we ask you to evaluate whether you would be interested in pursuing the individual featured (by pressing 💚) or not (by pressing ❌ ). After you have rated 30 profiles, your completion code will be displayed."), 
-        
+        For each profile, we ask you to evaluate whether you would be interested in dating the individual featured (by pressing 💚) or not (by pressing ❌ ). After you have rated 30 profiles, your completion code will be displayed."), 
+      
       p(strong("! Please do not refresh this website beforehand, otherwise the rating counter will be reset to 0.")),
       
       radioButtons(
@@ -95,15 +95,15 @@ ui <- fluidPage(
         inputId = "prolific_id",
         label = "Please submit your Prolific ID"
       ),
-
+      
       ## TODO: other fields
-
+      
       disabled(actionButton("submit", "Submit!", class = "btn-primary", style = "margin-bottom: 5%"))
     ),
-  
+    
     
     tags$div(id = "cards", style = "margin-left: 20%; max-width: 300px")
-  #  tags$div(id = "instr_btn", style = "margin-left: 30%")
+    #  tags$div(id = "instr_btn", style = "margin-left: 30%")
   )
 )
 
@@ -115,11 +115,11 @@ server <- function(input, output, session) {
   # update select inputs (fill with choice values)
   updateSelectInput(session, "dating_ever", 
                     choices = c("No" = "no", 
-                    "Yes, I am currently using online dating site or dating app" = "yes_current", 
-                    "Yes, I have used online dating site or dating app in the past" = "yes_past"), 
+                                "Yes, I am currently using online dating site or dating app" = "yes_current", 
+                                "Yes, I have used online dating site or dating app in the past" = "yes_past"), 
                     selected = "")
   
- 
+  
   updateSelectInput(session, "ethnicity",
                     choices =  c("Asian", "Black", "Hispanic", "White", "Multiple ethnicity", "Other"),
                     selected = "")
@@ -143,7 +143,7 @@ server <- function(input, output, session) {
   
   # Define function to Save user data
   
-    saveDataUsers <- function(data) {
+  saveDataUsers <- function(data) {
     # Connect to the database
     db <- dbConnect(SQLite(), sqlitePath)
     # Construct the update query by looping over the data fields
@@ -158,33 +158,34 @@ server <- function(input, output, session) {
     dbDisconnect(db)
   }
   
-
-    # Prepare user data for db
-    formDataUsers <- reactive({
-      data <- sapply(c(fieldsMandatory, "age"), function(x)
-        input[[x]])
-      data <- c(data, 
-                condition = condition,
-                start_time = start_time, 
-                submit_time = as.POSIXct(Sys.time()),
-                # conditional values export
-                dating_exp = ifelse(input$dating_ever %in% c("yes_current", "yes_past"), input$dating_exp, NA_character_),
-                dating_paid = ifelse(input$dating_ever %in% c("yes_current", "yes_past"), input$dating_paid, NA_character_))
-    })
-    
-
+  
+  # Prepare user data for db
+  formDataUsers <- reactive({
+    data <- sapply(c(fieldsMandatory, "age"), function(x)
+      input[[x]])
+    data <- c(data, 
+              condition = condition,
+              start_time = start_time, 
+              submit_time = as.POSIXct(Sys.time()),
+              # conditional values export
+              dating_exp = ifelse(input$dating_ever %in% c("yes_current", "yes_past"), input$dating_exp, NA_character_),
+              dating_paid = ifelse(input$dating_ever %in% c("yes_current", "yes_past"), input$dating_paid, NA_character_))
+  })
+  
+  
   # Questionnaire  
   # Field validations
   
   # Set up validation rule
   iv <- InputValidator$new()
   iv$add_rule("age", sv_between(18, 99, message_fmt = "Please enter valid age."))
+  iv$add_rule("age", sv_integer("Please enter valid age."))
   
   # defer validation of age field so it's displayed only after user inputs some number
-  observeEvent(req(is.numeric(input$age)), {
-               iv$enable()})
+  observeEvent(req(is.integer(input$age)), {
+    iv$enable()})
   
-
+  
   # Remaining input fields
   fieldsMandatory <- c("gender", "int_in", "prolific_id", "ethnicity", "dating_ever", "relationship", "education")
   fieldsConditionals <- c("dating_exp", "dating_paid")
@@ -198,20 +199,20 @@ server <- function(input, output, session) {
              },  logical(1))
     
     # verify valid age
-    ageFilled <- input$age >= 18 & input$age < 99
+    ageFilled <- is.integer(input$age) & (input$age >= 18 & input$age <= 99)
     
     # verify conditionals
     conditionalsFilled <- ifelse(input$dating_ever %in% c("yes_current", "yes_past"),
-                           # if experience with online dating, validate fields
-                           vapply(fieldsConditionals,
-                                  function(x) {
-                                    !is.null(input[[x]]) && input[[x]] != ""
-                                  },  logical(1)), 
-                           # if no experience with online dating or not selected yet, 
-                           # validate as true
-                           TRUE)
+                                 # if experience with online dating, validate fields
+                                 vapply(fieldsConditionals,
+                                        function(x) {
+                                          !is.null(input[[x]]) && input[[x]] != ""
+                                        },  logical(1)), 
+                                 # if no experience with online dating or not selected yet, 
+                                 # validate as true
+                                 TRUE)
     
-
+    
     # print(paste("Conditionals filled", conditionals))
     
     mandatoryFilled <- all(c(mandatoryFilled, ageFilled, conditionalsFilled))
@@ -221,7 +222,7 @@ server <- function(input, output, session) {
     
     
   })
-
+  
   output$heart <- renderImage(
     {
       list(
@@ -246,20 +247,20 @@ server <- function(input, output, session) {
     
     print(profiles)
     print(profiles[2, ])
-
+    
     # hide questionnaire
     removeUI(selector = "#quest")
     
     
     # Generate profile information
-
+    
     # get id of current sampled profile
     # has to be reactive to be updated after clicking
     currentProfile <- reactiveVal(
       profiles[1, ]
     )
-
-
+    
+    
     
     
     # Display exp. condition
@@ -268,7 +269,7 @@ server <- function(input, output, session) {
       ifelse(condition == 0, "", paste("This profile has a", currentProfile()$attr_level, "popularity rating, indicating that", 
                                        ifelse(currentProfile()$attr_level == "high", "many",
                                               ifelse(currentProfile()$attr_level == "medium", "some", "not many")),
-                                       "other users pursued the profile."))
+                                       "other users liked the profile."))
     )
     
     
@@ -283,12 +284,12 @@ server <- function(input, output, session) {
       },
       deleteFile = F
     )
-
+    
     # Get age of sampled profile (has to match age)
     output$profileAge <- renderText({
       paste("Age:", currentProfile()$age)
     })
-
+    
     
     # Randomize education level
     currentEduc <- reactiveVal(
@@ -300,17 +301,17 @@ server <- function(input, output, session) {
       paste("Education:", currentEduc())
     })
     
-
+    
     # Function that updates profile after clicking
     # Set up counter
     counter <- reactiveVal(1)
-
+    
     updateProfile <- function() {
       
       # Update counter
       newCounter <- counter() + 1
       counter(newCounter)
-
+      
       # check how far (how many profiles were viewed) in the app
       if (counter() <= 30) {
         
@@ -334,13 +335,14 @@ server <- function(input, output, session) {
         
       }
     }
-
+    
     
     
     # Forming choice data
-
+    
     formDataChoices <- reactive({
-      data <- tibble(prolific_id = input$prolific_id, 
+      data <- tibble(choice_id = counter(), 
+                     prolific_id = input$prolific_id, 
                      id = currentProfile()$profile_id,
                      url = currentProfile()$photo,
                      age = currentProfile()$age,
@@ -366,17 +368,17 @@ server <- function(input, output, session) {
       dbSendStatement(db, query)
       dbDisconnect(db)
     }
-
-   
-
-
+    
+    
+    
+    
     # Action when the "Success" button is clicked
     observeEvent(input$successButton, {
       saveDataChoices(formDataChoices(), success = TRUE)
       # update profile after saving data
       updateProfile()
     })
-
+    
     # Action when the "Fail" button is clicked
     observeEvent(input$failButton, {
       saveDataChoices(formDataChoices(), success = FALSE)
@@ -387,20 +389,20 @@ server <- function(input, output, session) {
     
     observeEvent(input$instructions, {
       shinyalert("Your choices",
-                 "💚 Green Heart - If you're interested in pursuing the individual.
-                  ❌ Red Cross - If you're not interested in pursuing the individual.", 
+                 "💚 Green Heart - If you're interested in dating the individual.
+                  ❌ Red Cross - If you're not interested in dating the individual.", 
                  type = "info")
-      }
+    }
     )
     
     
     ### UI part of the cards-part
-
+    
     # show app
     insertUI(selector = "#cards", ui = tagList( # App part
       
-     
-
+      
+      
       tags$div(
         id = "main_card",
         style = "text-align: center; 
@@ -408,13 +410,14 @@ server <- function(input, output, session) {
               border-color: black; 
               border-radius: 35px;
               border-width: 5px;
-              padding: 5%",
+              padding: 5%;
+        background-color: #f5f6f7",
         
-
+        
         # Display profile image
         tags$div(style = "padding: 5%",
-          imageOutput("profileImage")),
-
+                 imageOutput("profileImage")),
+        
         # Display age and education
         tags$div(
           id = "profileInfo", style = "font-size: 18px",
@@ -424,14 +427,14 @@ server <- function(input, output, session) {
           id = "profileInfo", style = "font-size: 18px",
           textOutput("profileEduc")
         ),
-
-    
+        
+        
         tags$p(
           id = "attr",
           style = "font-size: 16px",
           textOutput("condition_display")
         ),
-
+        
         # Buttons for success and fail
         # TODO: style 
         tags$div(
@@ -440,8 +443,8 @@ server <- function(input, output, session) {
           actionButton("successButton", "", class = "button-heart"),
           actionButton("failButton", "", class = "button-cross")
         )
-      
-      
+        
+        
       ),
       tags$div(
         style = "display: flex; justify-content: center; padding: 5%",
