@@ -1,8 +1,12 @@
 
-
 img {
-  padding: 5% !important;
+  padding: 1% !important;
 }
+
+#buttonGroup {
+  padding-top: 40%;
+}
+
 
 .button-heart{
    background-image: url('heart.png') !important;

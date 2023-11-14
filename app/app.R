@@ -102,7 +102,7 @@ ui <- fluidPage(
     ),
   
     
-    tags$div(id = "cards", style = "margin-left: 30%; max-width: 300px")
+    tags$div(id = "cards", style = "margin-left: 20%; max-width: 300px")
   #  tags$div(id = "instr_btn", style = "margin-left: 30%")
   )
 )
@@ -234,7 +234,7 @@ server <- function(input, output, session) {
     saveDataUsers(formDataUsers())
     
     # Load in profile data
-    profiles <- read.csv("profiles_cfd.csv") |>
+    profiles <- read.csv("profiles_cfd_filtered.csv") |>
       # filter based on user input
       filter(gender %in% input$int_in) |>
       # sample out N 
@@ -272,8 +272,8 @@ server <- function(input, output, session) {
     output$profileImage <- renderImage(
       {
         list(
-          src = paste0("imgs/", currentProfile()$photo),
-          width = "90%"
+          src = paste0("imgs_filtered/", currentProfile()$photo),
+          width = "100%"
         )
       },
       deleteFile = F
@@ -431,7 +431,7 @@ server <- function(input, output, session) {
         # TODO: style 
         tags$div(
           id = "buttonGroup",
-          style = "display: flex; justify-content: space-around; margin-top: 20px; padding-bottom:5%",
+          style = "display: flex; justify-content: space-around; margin-top: 10px; padding-bottom:5%",
           actionButton("successButton", "", class = "button-heart"),
           actionButton("failButton", "", class = "button-cross")
         )
