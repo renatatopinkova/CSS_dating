@@ -131,7 +131,7 @@ ui <- fluidPage(
       
       ## TODO: other fields
       
-      disabled(actionButton("submit", "Submit!", class = "btn-primary", style = "margin-bottom: 5%"))
+      disabled(actionButton("submit", "Submit & Start Rating!", class = "btn-primary", style = "margin-bottom: 5%"))
     ),
     
     
@@ -233,7 +233,7 @@ server <- function(input, output, session) {
   
   # Remaining input fields
   fieldsMandatory <- c("gender", "int_in", "prolific_id", "ethnicity", "dating_ever", "relationship", "education", "attractive", "country")
-  fieldsConditionals <- c("dating_paid", "dating_success", "dating_exp")
+  fieldsConditionals <- c("dating_paid", "dating_exp", "dating_success")
   
   observe({
     # Function that checks whether all input fields in questionnaire were filled
@@ -248,15 +248,19 @@ server <- function(input, output, session) {
     
     # verify conditionals
     conditionalsFilled <- ifelse(input$dating_ever %in% c("yes_current", "yes_past"),
-                                 # if experience with online dating, validate fields
-                                 vapply(fieldsConditionals,
-                                        function(x) {
-                                          !is.null(input[[x]]) && input[[x]] != ""
-                                        },  logical(1)), 
-                                 # if no experience with online dating or not selected yet, 
-                                 # validate as true
-                                 TRUE)
+      vapply(
+        fieldsConditionals,
+        function(x) {
+          !is.null(input[[x]]) && input[[x]] != "" 
+        }, logical(1)
+      ) |> all(),
+      TRUE
+    )
+
     
+  
+      print(conditionalsFilled)
+
     
     conditionalsRelFilled <- ifelse(input$relationship == "no", !is.null(input$dating_looking_for) & input$dating_looking_for != "", TRUE)
     
