@@ -47,8 +47,16 @@ ui <- fluidPage(
         "What is your age?",
         value = numeric(0),
         min = 18,
-        max = 99,
+        max = 99
       ),
+      
+      selectInput(
+        "country", 
+        "Where do you live?",
+        choices = "",
+        selected = NULL,
+        multiple = FALSE
+      ), 
       
       # select inputs created empty to avoid defaulting to first value when not selected
       selectInput(
@@ -64,11 +72,29 @@ ui <- fluidPage(
                   choices = "",
                   multiple = FALSE),
       
+      radioButtons("attractive",
+                   "How attractive would you say you are?",
+                   choices = c("1 - Very unattractive" = "1",
+                               "2" = "2", 
+                               "3" = "3", 
+                               "4" = "4", 
+                               "5 - Very attractive" = "5"),
+                   inline = TRUE,
+                   selected = character(0)),
+      
+      
       radioButtons("relationship",
                    "Are you currently in a committed romantic relationship?",
                    choices = c("Yes, I am in a committed romantic relationship" = "yes",
                                "No, I am not in a committed romantic relationship" = "no"),
                    selected = character(0)),
+      
+      conditionalPanel(condition = "input.relationship == 'no'",
+                       selectInput("dating_looking_for",
+                                   "Which of these best describes what you are looking for romantically right now?",
+                                   choices = "",
+                                   selected = NULL,
+                                   selectize=TRUE)),
       
       selectInput("dating_ever",
                   "Have you ever used an online dating site or dating app?",
@@ -79,16 +105,23 @@ ui <- fluidPage(
       # Filter for online dating experience == YES
       conditionalPanel(condition = "input.dating_ever.startsWith('yes')",
                        
+                       radioButtons("dating_paid",
+                                    "Have you ever paid to use an online dating site or dating app, including for extra features on that site or app?",
+                                    choices = c("Yes, I have done this", "No, I have not done this"),
+                                    selected = character(0)),
+                       
+                       radioButtons("dating_success", 
+                                    "How successful have you been in matching with people you are interested in on online dating sites or dating apps?", 
+                                    choices = c("Very successful", "Somewhat successful", "Neither", "Somewhat unsuccessful", "Very unsuccessful"),
+                                    inline=TRUE, 
+                                    selected = character(0)),
+                       
                        radioButtons("dating_exp", 
                                     "Overall, would you say your OWN personal experiences with online dating sites or dating apps have been…",
                                     choices = c("Very positive", "Somewhat positive", "Somewhat negative", "Very negative"),
                                     inline=TRUE, 
                                     selected = character(0)),
-                       
-                       radioButtons("dating_paid",
-                                    "Have you ever paid to use an online dating site or dating app, including for extra features on that site or app?",
-                                    choices = c("Yes, I have done this", "No, I have not done this"),
-                                    selected = character(0))),
+                       ),
       
       
       textInput(
@@ -103,7 +136,6 @@ ui <- fluidPage(
     
     
     tags$div(id = "cards", style = "margin-left: 20%; max-width: 300px")
-    #  tags$div(id = "instr_btn", style = "margin-left: 30%")
   )
 )
 
@@ -119,6 +151,10 @@ server <- function(input, output, session) {
                                 "Yes, I have used online dating site or dating app in the past" = "yes_past"), 
                     selected = "")
   
+  updateSelectInput(session, "country",
+                    choices =  c("United States", "United Kingdom", "Germany", "France", "Other"),
+                    selected = "")
+  
   
   updateSelectInput(session, "ethnicity",
                     choices =  c("Asian", "Black", "Hispanic", "White", "Multiple ethnicity", "Other"),
@@ -128,6 +164,13 @@ server <- function(input, output, session) {
                     choices = c("Less than high school",
                                 "High school",
                                 "College or University"),
+                    selected = "")
+  
+  updateSelectInput(session, "dating_looking_for",
+                    choices = c("A committed romantic relationship only" = "serious",
+                                "Casual dates only" = "casual",
+                                "Either a committed romantic relationship or casual dates" = "both",
+                                "Not currently looking for a relationship or casual dates" = "neither"),
                     selected = "")
   
   # Assign condition randomly
@@ -169,7 +212,9 @@ server <- function(input, output, session) {
               submit_time = as.POSIXct(Sys.time()),
               # conditional values export
               dating_exp = ifelse(input$dating_ever %in% c("yes_current", "yes_past"), input$dating_exp, NA_character_),
-              dating_paid = ifelse(input$dating_ever %in% c("yes_current", "yes_past"), input$dating_paid, NA_character_))
+              dating_paid = ifelse(input$dating_ever %in% c("yes_current", "yes_past"), input$dating_paid, NA_character_),
+              dating_looking_for = ifelse(input$relationship == "no", input$dating_looking_for, NA_character_),
+              dating_success = ifelse(input$dating_ever %in% c("yes_current", "yes_past"), input$dating_success, NA_character_))
   })
   
   
@@ -187,8 +232,8 @@ server <- function(input, output, session) {
   
   
   # Remaining input fields
-  fieldsMandatory <- c("gender", "int_in", "prolific_id", "ethnicity", "dating_ever", "relationship", "education")
-  fieldsConditionals <- c("dating_exp", "dating_paid")
+  fieldsMandatory <- c("gender", "int_in", "prolific_id", "ethnicity", "dating_ever", "relationship", "education", "attractive", "country")
+  fieldsConditionals <- c("dating_paid", "dating_success", "dating_exp")
   
   observe({
     # Function that checks whether all input fields in questionnaire were filled
@@ -213,9 +258,10 @@ server <- function(input, output, session) {
                                  TRUE)
     
     
-    # print(paste("Conditionals filled", conditionals))
+    conditionalsRelFilled <- ifelse(input$relationship == "no", !is.null(input$dating_looking_for) & input$dating_looking_for != "", TRUE)
     
-    mandatoryFilled <- all(c(mandatoryFilled, ageFilled, conditionalsFilled))
+    # Check all fields
+    mandatoryFilled <- all(c(mandatoryFilled, ageFilled, conditionalsFilled, conditionalsRelFilled))
     
     # Toggle (activate) submit button when all fields are filled
     toggleState(id = "submit", condition = mandatoryFilled)
