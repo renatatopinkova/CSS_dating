@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+/app/db/
+/app_archived_run1/db/
+.jpg
